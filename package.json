@@ -1,0 +1,105 @@
+{
+  "name": "ai-notes-md",
+  "displayName": "AI Notes for Markdown",
+  "description": "Create AI-friendly annotations attached to selected Markdown text.",
+  "version": "0.0.13",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onCommand:aiNotes.addNote",
+    "onCommand:aiNotes.addNoteFromContext",
+    "onCommand:aiNotes.addNoteFromCodeLens",
+    "onCommand:aiNotes.submitInlineNote",
+    "onCommand:aiNotes.discardInlineNote",
+    "onCommand:aiNotes.revealNote"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiNotes.addNote",
+        "title": "%aiNotes.command.addNote.title%",
+        "category": "%aiNotes.command.category%"
+      },
+      {
+        "command": "aiNotes.addNoteFromContext",
+        "title": "%aiNotes.command.addAiNote.title%"
+      },
+      {
+        "command": "aiNotes.addNoteFromCodeLens",
+        "title": "%aiNotes.command.addAiNote.title%"
+      },
+      {
+        "command": "aiNotes.submitInlineNote",
+        "title": "%aiNotes.command.saveInlineNote.title%",
+        "enablement": "!commentIsEmpty"
+      },
+      {
+        "command": "aiNotes.discardInlineNote",
+        "title": "%aiNotes.command.discardInlineNote.title%"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "aiNotes.submitInlineNote",
+          "when": "false"
+        },
+        {
+          "command": "aiNotes.discardInlineNote",
+          "when": "false"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "aiNotes.addNoteFromContext",
+          "when": "editorTextFocus && editorHasSelection && resourceLangId == markdown && resourceExtname == .md",
+          "group": "navigation@10"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "aiNotes.submitInlineNote",
+          "group": "inline",
+          "when": "commentController == ai-notes-md && commentThreadIsEmpty"
+        }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "aiNotes.discardInlineNote",
+          "group": "navigation",
+          "when": "commentController == ai-notes-md && commentThreadIsEmpty"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "editor.action.submitComment",
+        "key": "ctrl+enter",
+        "when": "commentEditorFocused && !commentIsEmpty && commentController == ai-notes-md"
+      },
+      {
+        "command": "editor.action.submitComment",
+        "key": "cmd+enter",
+        "mac": "cmd+enter",
+        "when": "commentEditorFocused && !commentIsEmpty && commentController == ai-notes-md"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.2"
+  }
+}

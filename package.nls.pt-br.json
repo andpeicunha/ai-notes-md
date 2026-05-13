@@ -1,0 +1,7 @@
+{
+  "aiNotes.command.category": "Notas de IA",
+  "aiNotes.command.addNote.title": "Adicionar nota",
+  "aiNotes.command.addAiNote.title": "Adicionar nota de IA",
+  "aiNotes.command.saveInlineNote.title": "Salvar nota de IA",
+  "aiNotes.command.discardInlineNote.title": "Descartar nota de IA"
+}

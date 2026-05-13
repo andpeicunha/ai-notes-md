@@ -1,0 +1,7 @@
+{
+  "aiNotes.command.category": "AI Notes",
+  "aiNotes.command.addNote.title": "Add Note",
+  "aiNotes.command.addAiNote.title": "Add AI Note",
+  "aiNotes.command.saveInlineNote.title": "Save AI Note",
+  "aiNotes.command.discardInlineNote.title": "Discard AI Note"
+}
