@@ -3,3 +3,8 @@ src
 .vscode
 *.map
 tsconfig.json
+.codegraph
+.gitignore
+AGENTS.md
+*.vsix
+CONTRIBUTING.md

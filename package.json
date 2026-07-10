@@ -1,9 +1,26 @@
 {
   "name": "ai-notes-md",
-  "displayName": "AI Notes for Markdown",
-  "description": "Create AI-friendly annotations attached to selected Markdown text.",
-  "version": "0.0.13",
-  "publisher": "local",
+  "displayName": "SDD AI Notes",
+  "description": "Spec-Driven Development: annotate Markdown files for AI agents.",
+  "version": "0.0.15",
+  "publisher": "ANDREPEIXOTODACUNHA",
+  "icon": "icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andpeicunha/ai-notes-md"
+  },
+  "bugs": {
+    "url": "https://github.com/andpeicunha/ai-notes-md/issues"
+  },
+  "homepage": "https://github.com/andpeicunha/ai-notes-md#readme",
+  "keywords": [
+    "markdown",
+    "ai",
+    "notes",
+    "annotation",
+    "comments"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },
