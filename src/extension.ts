@@ -128,11 +128,11 @@ async function addAiNote() {
   }
 
   if (selection.isEmpty) {
-    vscode.window.showWarningMessage(messages.selectMarkdownText);
-    return;
+    const lineRange = document.lineAt(selection.active.line).range;
+    editor.selection = new vscode.Selection(lineRange.start, lineRange.end);
   }
 
-  const selectedText = document.getText(selection).trim();
+  const selectedText = document.getText(editor.selection).trim();
 
   if (!selectedText) {
     vscode.window.showWarningMessage(messages.selectNonEmptyText);
@@ -164,12 +164,16 @@ async function submitInlineNote(
     return;
   }
 
-  const threadRange = thread.range;
+  const rawRange = thread.range;
+  let threadRange: vscode.Range;
 
-  if (!threadRange) {
-    vscode.window.showWarningMessage(messages.selectMarkdownText);
-    thread.dispose();
-    return;
+  if (!rawRange || (rawRange.start.line === rawRange.end.line && rawRange.start.character === rawRange.end.character)) {
+    const fallbackLine = editor?.selection.active.line ?? 0;
+    const safeLine = Math.max(0, Math.min(fallbackLine, document.lineCount - 1));
+    const lineTextLength = document.lineAt(safeLine).text.length;
+    threadRange = new vscode.Range(safeLine, 0, safeLine, lineTextLength);
+  } else {
+    threadRange = rawRange;
   }
 
   const selectedText = document.getText(threadRange).trim();
@@ -394,8 +398,7 @@ class AiNoteMarkerController implements vscode.Disposable {
       gutterIconPath: vscode.Uri.joinPath(context.extensionUri, 'media', 'note-pending.svg'),
       gutterIconSize: 'contain',
       overviewRulerColor: new vscode.ThemeColor('editorWarning.foreground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-      isWholeLine: true
+      overviewRulerLane: vscode.OverviewRulerLane.Right
     });
   }
 
