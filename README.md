@@ -17,8 +17,19 @@ Select text in any `.md` file, add an AI note, and the extension appends a struc
 - **Inline note creation** via VS Code's native Comments UI
 - **Gutter markers** on annotated lines with hover preview and quick-jump links
 - **Auto-generated `# AI Notes` section** with agent instructions
-- **Resolution workflow** — agents convert resolved notes into historical records instead of deleting them
+- **Resolution workflow** — agents convert resolved notes into historical records instead of deleting them (configurable via `aiNotes.resolvedNoteAction`)
 - **en-US / pt-BR** — UI labels auto-switch with VS Code language; generated Markdown stays in English for stable AI parsing
+
+## Settings
+
+- `aiNotes.resolvedNoteAction` (`delete` | `convert-to-history`, default: `delete`)
+  - `delete` — generated instructions tell agents to remove the entire resolved `## NOTE-XXX` block.
+  - `convert-to-history` — generated instructions tell agents to move resolved notes to `# AI Notes History` as `## NOTE-XXX ✅`.
+  - This setting only affects newly generated `# AI Notes` instruction blocks. Existing instruction blocks are not mutated. Behavior is non-retroactive.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## Workflow
 

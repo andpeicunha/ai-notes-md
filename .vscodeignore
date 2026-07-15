@@ -4,6 +4,7 @@ src
 *.map
 tsconfig.json
 .codegraph
+.opencode
 .gitignore
 AGENTS.md
 *.vsix

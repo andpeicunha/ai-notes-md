@@ -2,22 +2,37 @@ import * as vscode from 'vscode';
 
 const AI_NOTES_HEADING = '# AI Notes';
 const AI_NOTES_INSTRUCTIONS_HEADING = '## Instructions for AI Agents';
-const AI_NOTES_INSTRUCTIONS = [
-  AI_NOTES_INSTRUCTIONS_HEADING,
-  '',
-  'When analyzing this document, treat every note with `Status: pending` as an active request.',
-  '',
-  'After resolving a note:',
-  '',
-  '1. Do not delete the note.',
-  '2. Convert it into a short historical record.',
-  '3. Remove the fields `Status`, `Lines`, `Selected Text`, `Human Comment`, `Expected AI Action`, and `Created At`.',
-  '4. Change the heading to `## NOTE-XXX ✅`.',
-  '5. Summarize the outcome using readable labels such as `**Question:**`, `**Decision:**`, `**Answer:**`, or `**Visual reference:**`.',
-  '6. Keep the resolved note inside this `# AI Notes` section.',
-  '',
-  'Unresolved notes must remain unchanged with `Status: pending`.'
-].join('\n');
+function getResolvedNoteAction(): string {
+  return vscode.workspace.getConfiguration('aiNotes').get<string>('resolvedNoteAction', 'delete');
+}
+
+function buildAiNotesInstructions(): string {
+  const action = getResolvedNoteAction();
+  const lines: string[] = [
+    AI_NOTES_INSTRUCTIONS_HEADING,
+    '',
+    'When analyzing this document, treat every note with `Status: pending` as an active request.',
+    '',
+    'After resolving a note:',
+    ''
+  ];
+
+  if (action === 'delete') {
+    lines.push('1. Delete the entire `## NOTE-XXX` block from the document.');
+  } else {
+    lines.push(
+      '1. Do not delete the note.',
+      '2. Move the `## NOTE-XXX` block to a separate `# AI Notes History` section at the end of the document.',
+      '3. Change the heading to `## NOTE-XXX ✅`.',
+      '4. Remove the fields `Status`, `Lines`, `Selected Text`, `Human Comment`, `Expected AI Action`, and `Created At`.',
+      '5. Summarize the outcome using readable labels such as `**Question:**`, `**Decision:**`, `**Answer:**`, or `**Visual reference:**`.'
+    );
+  }
+
+  lines.push('', 'Unresolved notes must remain unchanged with `Status: pending`.');
+
+  return lines.join('\n');
+}
 const NOTE_ID_PATTERN = /## NOTE-(\d{3,})\b/g;
 const DEFAULT_MESSAGES = {
   openMarkdownFile: 'Open a Markdown file before adding an AI note.',
@@ -496,13 +511,13 @@ function buildAppendText(documentText: string, note: { markdown: string }): stri
 
   if (hasAiNotesSection) {
     if (!hasInstructions) {
-      return `${prefix}\n${AI_NOTES_INSTRUCTIONS}\n\n${note.markdown}\n`;
+      return `${prefix}\n${buildAiNotesInstructions()}\n\n${note.markdown}\n`;
     }
 
     return `${prefix}\n${note.markdown}\n`;
   }
 
-  return `${prefix}\n---\n\n${AI_NOTES_HEADING}\n\n${AI_NOTES_INSTRUCTIONS}\n\n${note.markdown}\n`;
+  return `${prefix}\n---\n\n${AI_NOTES_HEADING}\n\n${buildAiNotesInstructions()}\n\n${note.markdown}\n`;
 }
 
 function formatLocalTimestamp(date: Date): string {

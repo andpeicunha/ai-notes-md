@@ -3,5 +3,9 @@
   "aiNotes.command.addNote.title": "Add Note",
   "aiNotes.command.addAiNote.title": "Add AI Note",
   "aiNotes.command.saveInlineNote.title": "Save AI Note",
-  "aiNotes.command.discardInlineNote.title": "Discard AI Note"
+  "aiNotes.command.discardInlineNote.title": "Discard AI Note",
+  "aiNotes.configuration.title": "AI Notes",
+  "aiNotes.configuration.resolvedNoteAction.description": "Action to take when a note is resolved. Affects the generated instructions for new # AI Notes sections. Existing instruction blocks are not mutated.",
+  "aiNotes.configuration.resolvedNoteAction.delete": "Delete the entire ## NOTE-XXX block from the document.",
+  "aiNotes.configuration.resolvedNoteAction.convertToHistory": "Move the ## NOTE-XXX block to a separate # AI Notes History section and mark it as resolved with ✅."
 }
