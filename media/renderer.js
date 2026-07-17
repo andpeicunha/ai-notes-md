@@ -130,8 +130,8 @@ function injectAnnotationMarkers(rawText, notes) {
             result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}">${content}`);
           }
           openNoteId = noteId;
+          continue;
         }
-        continue;
       }
     } else {
       if (openNoteId !== null) {
