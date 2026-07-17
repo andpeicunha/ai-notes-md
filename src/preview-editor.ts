@@ -139,22 +139,8 @@ async function handleCreateNote(
   const document = await vscode.workspace.openTextDocument(originalDoc.uri);
   const fullText = document.getText();
 
-  // Find the selected text in the document
-  let targetPos = fullText.indexOf(selectedText);
-
-  // Try each non-empty line
-  if (targetPos === -1) {
-    const lines = selectedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
-    for (const line of lines) {
-      const pos = fullText.indexOf(line);
-      if (pos !== -1) { targetPos = pos; break; }
-    }
-  }
-
-  // Try normalized
-  if (targetPos === -1) {
-    targetPos = fullText.indexOf(selectedText.replace(/\s+/g, ' ').trim());
-  }
+  // Multi-strategy text matching (rendered HTML vs raw Markdown)
+  let targetPos = findSelectedTextInDocument(fullText, selectedText);
 
   if (targetPos === -1) {
     vscode.window.showWarningMessage(
@@ -194,4 +180,56 @@ async function handleCreateNote(
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Robust text matching: handles markdown formatting differences between
+// rendered HTML (what user selects) and raw markdown source.
+function findSelectedTextInDocument(fullText: string, selectedText: string): number {
+  // 1. Exact match
+  let pos = fullText.indexOf(selectedText);
+  if (pos !== -1) return pos;
+
+  // 2. Normalized whitespace
+  const normalized = selectedText.replace(/\s+/g, ' ').trim();
+  pos = fullText.indexOf(normalized);
+  if (pos !== -1) return pos;
+
+  // 3. Strip backtick code (`text` → text), bold (**text** → text),
+  //    italic (*text* → text), links ([text](url) → text) from raw text,
+  //    then search the plain version.
+  const plainRaw = fullText
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  pos = plainRaw.indexOf(selectedText);
+  if (pos !== -1) return pos;
+  pos = plainRaw.indexOf(normalized);
+  if (pos !== -1) return pos;
+
+  // 4. Try each non-empty line of the selection
+  const lines = selectedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
+  for (const line of lines) {
+    pos = fullText.indexOf(line);
+    if (pos !== -1) return pos;
+    pos = plainRaw.indexOf(line);
+    if (pos !== -1) return pos;
+  }
+
+  // 5. Try word anchors: first 3 words and last 3 words
+  const words = selectedText.split(/\s+/).filter(w => w.length > 2);
+  if (words.length >= 3) {
+    const first3 = words.slice(0, Math.min(3, words.length)).join(' ');
+    const last3 = words.slice(-Math.min(3, words.length)).join(' ');
+    pos = fullText.indexOf(first3);
+    if (pos !== -1) return pos;
+    pos = fullText.indexOf(last3);
+    if (pos !== -1) return pos;
+    pos = plainRaw.indexOf(first3);
+    if (pos !== -1) return pos;
+    pos = plainRaw.indexOf(last3);
+    if (pos !== -1) return pos;
+  }
+
+  return -1;
 }
