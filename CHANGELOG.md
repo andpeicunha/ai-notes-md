@@ -2,6 +2,14 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.0.9
+
+### Corrigido
+
+- Chip de nota em tabela agora faz scroll até a posição aproximada no preview (não pula mais pro editor raw).
+- Chip mostra indicador `· table` para notas em linhas de tabela.
+- Destaque inline em tabelas permanece desabilitado (span quebra HTML entre pipes).
+
 ## 1.0.8
 
 ### Corrigido
