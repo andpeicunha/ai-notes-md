@@ -340,17 +340,18 @@ body {
 }
 
 /* ── Table row annotation ── */
+.ai-note-row td,
+.ai-note-row th {
+  background: rgba(255,213,79,0.18);
+}
+
 .ai-note-row {
-  border-left: 3px solid #ffc107;
   cursor: pointer;
 }
 
-.ai-note-row:hover {
-  background: rgba(255,213,79,0.08);
-}
-
-.ai-note-row td:first-child {
-  padding-left: 7px;
+.ai-note-row:hover td,
+.ai-note-row:hover th {
+  background: rgba(255,213,79,0.28);
 }
 
 /* ── Highlight.js overrides ── */
