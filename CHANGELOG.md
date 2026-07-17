@@ -2,7 +2,7 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
-## 0.0.36
+## 1.0.0 (2026-07-17)
 
 ### Adicionado
 
