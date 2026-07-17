@@ -2,6 +2,25 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.0.4
+
+### Alterado
+
+- **Clique no chip de nota** → scroll até o destaque dentro do preview (não pula mais pro editor).
+- **Clique no destaque** → abre tooltip customizado com o comentário + botão "Edit in editor".
+- **Tooltip nativo (`title`)** substituído por tooltip customizado, mais rápido e estilizado.
+- Só o botão "Edit in editor" no tooltip leva ao editor de texto.
+
+## 1.0.3
+
+- Imagens de demo do preview adicionadas ao README.
+
+## 1.0.2
+
+### Corrigido
+
+- Prefixo de bloco Markdown e span do highlight agora na mesma linha, preservando estrutura de listas.
+
 ## 1.0.1
 
 ### Corrigido

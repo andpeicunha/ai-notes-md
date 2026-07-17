@@ -275,5 +275,69 @@ body {
   opacity: 0.9;
 }
 
+/* ── Custom note tooltip ── */
+#note-tooltip {
+  position: absolute;
+  z-index: 200;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 12px 14px;
+  max-width: 360px;
+  min-width: 200px;
+  font-size: 13px;
+  display: none;
+  pointer-events: auto;
+}
+
+#note-tooltip.visible {
+  display: block;
+}
+
+.note-tooltip-close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--vscode-descriptionForeground, #999);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.note-tooltip-close:hover { color: var(--fg); }
+
+.note-tooltip-id {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.note-tooltip-text {
+  color: var(--fg);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.note-tooltip-edit {
+  font-size: 12px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.note-tooltip-edit:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ── Highlight.js overrides ── */
 .hljs { background: transparent !important; }

@@ -66,6 +66,12 @@ export class MarkdownPreviewProvider implements vscode.CustomTextEditorProvider 
       <button id="note-panel-submit" class="note-panel-btn-submit">Save</button>
     </div>
   </div>
+  <div id="note-tooltip">
+    <button id="note-tooltip-close" class="note-tooltip-close">&times;</button>
+    <div id="tooltip-note-id" class="note-tooltip-id"></div>
+    <div id="tooltip-note-text" class="note-tooltip-text"></div>
+    <button class="note-tooltip-edit">Edit in editor</button>
+  </div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

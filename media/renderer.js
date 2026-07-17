@@ -81,9 +81,6 @@ function escapeHtml(text) {
 function injectAnnotationMarkers(rawText, notes) {
   if (!notes.length) return rawText;
 
-  // Build noteId → note object map for title tooltips
-  const noteMap = new Map(notes.map(n => [n.noteId, n]));
-
   // Find where the AI Notes section starts to exclude it from line counting
   const sectionIdx = rawText.indexOf('\n# AI Notes');
   const mainText = sectionIdx === -1 ? rawText : rawText.slice(0, sectionIdx);
@@ -126,10 +123,7 @@ function injectAnnotationMarkers(rawText, notes) {
         const skipLine = isTableRow(mainLines[i]);
 
         if (!isBlank && !skipLine) {
-          const noteObj = noteMap.get(noteId);
-          const title = noteObj ? attrEscape(`${noteObj.noteId}: ${noteObj.humanComment}`) : '';
-          const content = mainLines[i].slice(prefix.length);
-          result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}" title="${title}">${content}`);
+          result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}">${content}`);
           openNoteId = noteId;
 
           // Don't push the raw line again — we already injected it with the span
@@ -208,7 +202,13 @@ function renderAnnotationCards(notes) {
   // Click chip → reveal in editor
   container.querySelectorAll('.note-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      vscode.postMessage({ type: 'revealNote', noteId: chip.dataset.noteId });
+      const noteId = chip.dataset.noteId;
+      const highlight = document.querySelector(`.ai-note-line[data-note-id="${noteId}"]`);
+      if (highlight) {
+        highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        vscode.postMessage({ type: 'revealNote', noteId });
+      }
     });
   });
 }
@@ -326,13 +326,54 @@ function renderAll(rawText) {
   document.getElementById('content').innerHTML = html;
   renderAnnotationCards(notes);
 
-  // Wire up click on highlighted spans
+  // Wire up click on highlighted spans → show custom tooltip
+  const noteById = new Map(notes.map(n => [n.noteId, n]));
   document.querySelectorAll('.ai-note-line').forEach(el => {
-    el.addEventListener('click', () => {
-      vscode.postMessage({ type: 'revealNote', noteId: el.dataset.noteId });
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const note = noteById.get(el.dataset.noteId);
+      if (note) {
+        showNoteTooltip(el, note);
+      }
     });
   });
 }
+
+// ── Custom tooltip for highlighted notes ──
+let tooltipTimer = null;
+
+function showNoteTooltip(anchor, note) {
+  hideNoteTooltip();
+  clearTimeout(tooltipTimer);
+
+  const tooltip = document.getElementById('note-tooltip');
+  document.getElementById('tooltip-note-id').textContent = note.noteId;
+  document.getElementById('tooltip-note-text').textContent = note.humanComment;
+  tooltip.querySelector('.note-tooltip-edit').dataset.noteId = note.noteId;
+
+  const rect = anchor.getBoundingClientRect();
+  tooltip.style.top = `${rect.bottom + window.scrollY + 4}px`;
+  tooltip.style.left = `${Math.max(4, rect.left + window.scrollX)}px`;
+  tooltip.classList.add('visible');
+}
+
+function hideNoteTooltip() {
+  const tooltip = document.getElementById('note-tooltip');
+  tooltip.classList.remove('visible');
+}
+
+document.getElementById('note-tooltip-close').addEventListener('click', hideNoteTooltip);
+document.querySelector('.note-tooltip-edit').addEventListener('click', function() {
+  vscode.postMessage({ type: 'revealNote', noteId: this.dataset.noteId });
+  hideNoteTooltip();
+});
+
+// Hide tooltip on click elsewhere
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#note-tooltip') && !e.target.closest('.ai-note-line')) {
+    hideNoteTooltip();
+  }
+});
 
 // ── Messages from extension host ──
 window.addEventListener('message', (event) => {
