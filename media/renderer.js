@@ -129,11 +129,7 @@ function injectAnnotationMarkers(rawText, notes) {
           const noteObj = noteMap.get(noteId);
           const title = noteObj ? attrEscape(`${noteObj.noteId}: ${noteObj.humanComment}`) : '';
           const content = mainLines[i].slice(prefix.length);
-
-          if (prefix) {
-            result.push(prefix);
-          }
-          result.push(`<span class="ai-note-line" data-note-id="${noteId}" title="${title}">${content}`);
+          result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}" title="${title}">${content}`);
           openNoteId = noteId;
 
           // Don't push the raw line again — we already injected it with the span
