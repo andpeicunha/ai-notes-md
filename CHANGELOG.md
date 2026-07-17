@@ -2,6 +2,33 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.0.8
+
+### Corrigido
+
+- Seleção de texto entre células de tabela agora funciona (split por tabs/espaços e busca cada célula).
+- Removido `<span>` em linhas de tabela (quebrava o HTML ao cruzar pipes). Notas em tabelas são acessíveis via chip no topo.
+
+## 1.0.7
+
+### Corrigido
+
+- Variável `content` não definida no injection loop (causava texto `undefined` no span).
+- Removido código morto (`attrEscape`, `wrapTableRow`).
+
+## 1.0.6
+
+### Corrigido
+
+- `plainRaw.indexOf()` retornava posição no texto sem formatação → `startLine`/`endLine` errados nas notas. Agora mapeia via contexto de volta pro `fullText`.
+- `String()` guard no `textContent` do painel de nota (evita `[object HTMLDivElement]`).
+
+## 1.0.5
+
+### Corrigido
+
+- `findSelectedTextInDocument` com 5 estratégias: match exato, whitespace normalizado, strip Markdown do raw, linha por linha, word anchors.
+
 ## 1.0.4
 
 ### Alterado
