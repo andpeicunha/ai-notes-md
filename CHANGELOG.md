@@ -2,6 +2,22 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 0.0.36
+
+### Adicionado
+
+- **Custom Editor Preview**: renderização de Markdown formatado com `marked` + syntax highlighting via `highlight.js`.
+- **Anotações inline no preview**: selecionar texto no preview → painel de comentário → salvar nota sem sair do preview.
+- **Destaque marca-texto**: trechos anotados aparecem com fundo amarelo semi-transparente (30% opacidade) no preview.
+- **Toggle bar colapsável**: cards de notas pendentes no topo do preview, colapsados por padrão (`▸ N notes`).
+- **Botão toggle na toolbar**: ícone `$(comment-discussion)` alterna entre editor de texto e preview customizado.
+- **Tooltip no hover do destaque**: mostra o comentário da nota ao passar o mouse.
+
+### Alterado
+
+- Lógica pura de parsing/escrita de notas extraída para `src/notes-core.ts` (refactor interno).
+- `src/extension.ts` reduzido de 535 para ~320 linhas (-43%).
+
 ## 0.0.22
 
 ### Alterado

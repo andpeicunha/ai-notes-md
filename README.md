@@ -14,11 +14,12 @@ Select text in any `.md` file, add an AI note, and the extension appends a struc
 
 ## Features
 
-- **Inline note creation** via VS Code's native Comments UI
-- **Gutter markers** on annotated lines with hover preview and quick-jump links
-- **Auto-generated `# AI Notes` section** with agent instructions
-- **Resolution workflow** — agents convert resolved notes into historical records instead of deleting them (configurable via `aiNotes.resolvedNoteAction`)
-- **en-US / pt-BR** — UI labels auto-switch with VS Code language; generated Markdown stays in English for stable AI parsing
+- **Custom Markdown Preview** — toggle to a rendered preview with syntax highlighting, inline annotations, and visual highlights on annotated text.
+- **Inline note creation** via VS Code's native Comments UI or directly from the preview.
+- **Gutter markers** on annotated lines with hover preview and quick-jump links.
+- **Auto-generated `# AI Notes` section** with agent instructions.
+- **Resolution workflow** — agents convert resolved notes into historical records instead of deleting them (configurable via `aiNotes.resolvedNoteAction`).
+- **en-US / pt-BR** — UI labels auto-switch with VS Code language; generated Markdown stays in English for stable AI parsing.
 
 ## Settings
 
@@ -40,6 +41,15 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 5. Press `Ctrl+Enter` / `Cmd+Enter` or click **Save AI Note**.
 
 The note is appended at the end of the file inside an `# AI Notes` section (created automatically if missing).
+
+## Using the Preview
+
+Click the `$(comment-discussion)` icon in the editor toolbar to toggle between the text editor and the rendered preview.
+
+- **Preview mode** renders Markdown with syntax-highlighted code blocks, tables, and formatting.
+- **Annotated text** appears with a subtle highlighter effect. Hover to see the note's comment.
+- **Select text in the preview** → a comment panel slides up → type your note → `Ctrl+Enter` or click **Save**. The note is written to the file without leaving the preview.
+- **Annotation toggle bar** at the top shows pending notes. Expand to see the list, click any chip to jump to its position in the editor.
 
 ## Generated Format
 
@@ -100,6 +110,15 @@ Selecione um trecho em qualquer arquivo `.md`, adicione uma nota de IA, e a exte
 5. Pressione `Ctrl+Enter` / `Cmd+Enter` ou clique em **Save AI Note**.
 
 A nota é anexada no fim do arquivo dentro de uma seção `# AI Notes` (criada automaticamente se não existir). Notas pendentes exibem um marcador na gutter com hover preview e link para a nota completa.
+
+### Usando o Preview
+
+Clique no ícone `$(comment-discussion)` na barra de ferramentas do editor para alternar entre o editor de texto e o preview renderizado.
+
+- **Modo preview** renderiza Markdown com syntax highlighting em blocos de código, tabelas e formatação.
+- **Trechos anotados** aparecem com efeito marca-texto sutil. Passe o mouse para ver o comentário da nota.
+- **Selecione texto no preview** → um painel de comentário desliza de baixo → digite sua nota → `Ctrl+Enter` ou clique em **Save**. A nota é escrita no arquivo sem sair do preview.
+- **Barra de notas no topo** mostra as notas pendentes de forma colapsada. Expanda para ver a lista; clique em qualquer item para pular para a posição no editor.
 
 ### Fluxo de resolução
 
