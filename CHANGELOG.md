@@ -2,6 +2,17 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.1.0
+
+### Adicionado
+
+- **Indicador de anotação em tabelas**: `●` amarelo antes da tabela, clicável, abre tooltip customizado com o comentário.
+- Uso de comment markers (`<!--ai-note:NOTE-XXX-->`) + DOM pós-render — não quebra a estrutura da tabela.
+
+### Alterado
+
+- Linhas de tabela não recebem mais `<span>` inline (quebrava HTML entre pipes).
+
 ## 1.0.9
 
 ### Corrigido
