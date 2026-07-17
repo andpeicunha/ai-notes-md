@@ -25,6 +25,7 @@ Alterne para o preview renderizado e faça anotações sem sair dele.
 ![Preview toggle](media/demo-preview-toggle.png)
 ![Composing a note in the preview](media/demo-preview-compose.png)
 ![Highlight and tooltip](media/demo-preview-highlight.png)
+![Notes list and highlights](media/demo-notes-list.png)
 
 ---
 
