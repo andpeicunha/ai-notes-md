@@ -2,7 +2,7 @@
   "name": "ai-notes-md",
   "displayName": "SDD AI Notes",
   "description": "Spec-Driven Development: annotate Markdown files for AI agents.",
-  "version": "0.0.22",
+  "version": "0.0.36",
   "publisher": "ANDREPEIXOTODACUNHA",
   "icon": "icon.png",
   "license": "MIT",
@@ -34,7 +34,9 @@
     "onCommand:aiNotes.addNoteFromCodeLens",
     "onCommand:aiNotes.submitInlineNote",
     "onCommand:aiNotes.discardInlineNote",
-    "onCommand:aiNotes.revealNote"
+    "onCommand:aiNotes.revealNote",
+    "onCommand:aiNotes.togglePreview",
+    "onCustomEditor:aiNotes.markdownPreview"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -60,6 +62,11 @@
       {
         "command": "aiNotes.discardInlineNote",
         "title": "%aiNotes.command.discardInlineNote.title%"
+      },
+      {
+        "command": "aiNotes.togglePreview",
+        "title": "%aiNotes.command.togglePreview.title%",
+        "icon": "$(comment-discussion)"
       }
     ],
     "menus": {
@@ -71,6 +78,13 @@
         {
           "command": "aiNotes.discardInlineNote",
           "when": "false"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "aiNotes.togglePreview",
+          "when": "resourceLangId == markdown && resourceExtname == .md",
+          "group": "navigation"
         }
       ],
       "editor/context": [
@@ -125,16 +139,34 @@
         "mac": "cmd+enter",
         "when": "commentEditorFocused && !commentIsEmpty && commentController == ai-notes-md"
       }
+    ],
+    "customEditors": [
+      {
+        "viewType": "aiNotes.markdownPreview",
+        "displayName": "Markdown Preview with AI Notes",
+        "selector": [
+          { "filenamePattern": "*.md" }
+        ],
+        "priority": "option"
+      }
     ]
   },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "vscode:prepublish": "npm run compile"
+    "compile:webview": "esbuild media/renderer.js --bundle --outfile=media/renderer.bundle.js --format=iife --target=es2020 --platform=browser",
+    "vscode:prepublish": "npm run compile && npm run compile:webview"
   },
   "devDependencies": {
     "@types/node": "^20.14.8",
     "@types/vscode": "^1.90.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.5.2"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.12",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.6",
+    "marked-highlight": "^2.2.4"
   }
 }

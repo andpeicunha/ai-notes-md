@@ -4,6 +4,7 @@
   "aiNotes.command.addAiNote.title": "Adicionar nota de IA",
   "aiNotes.command.saveInlineNote.title": "Salvar nota de IA",
   "aiNotes.command.discardInlineNote.title": "Descartar nota de IA",
+  "aiNotes.command.togglePreview.title": "Alternar Preview com Anotações",
   "aiNotes.configuration.title": "Notas de IA",
   "aiNotes.configuration.resolvedNoteAction.description": "Ação a ser tomada quando uma nota é resolvida. Afeta as instruções geradas para novas seções # AI Notes. Blocos de instruções existentes não são alterados.",
   "aiNotes.configuration.resolvedNoteAction.delete": "Remover o bloco ## NOTE-XXX inteiro do documento.",

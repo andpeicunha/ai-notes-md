@@ -1,39 +1,10 @@
 import * as vscode from 'vscode';
+import { AI_NOTES_HEADING, AI_NOTES_INSTRUCTIONS_HEADING, NOTE_ID_PATTERN, ParsedAiNote, NoteInput, escapeRegExp, toBlockquote, formatLocalTimestamp, getNextNoteId, isMarkdownFile, parseAiNotes, getPendingNotes, buildAiNotesInstructions, buildNote, buildAppendText, getSelectionEndLine } from './notes-core';
+import { MarkdownPreviewProvider } from './preview-editor';
 
-const AI_NOTES_HEADING = '# AI Notes';
-const AI_NOTES_INSTRUCTIONS_HEADING = '## Instructions for AI Agents';
 function getResolvedNoteAction(): string {
   return vscode.workspace.getConfiguration('aiNotes').get<string>('resolvedNoteAction', 'delete');
 }
-
-function buildAiNotesInstructions(): string {
-  const action = getResolvedNoteAction();
-  const lines: string[] = [
-    AI_NOTES_INSTRUCTIONS_HEADING,
-    '',
-    'When analyzing this document, treat every note with `Status: pending` as an active request.',
-    '',
-    'After resolving a note:',
-    ''
-  ];
-
-  if (action === 'delete') {
-    lines.push('1. Delete the entire `## NOTE-XXX` block from the document.');
-  } else {
-    lines.push(
-      '1. Do not delete the note.',
-      '2. Move the `## NOTE-XXX` block to a separate `# AI Notes History` section at the end of the document.',
-      '3. Change the heading to `## NOTE-XXX ✅`.',
-      '4. Remove the fields `Status`, `Lines`, `Selected Text`, `Human Comment`, `Expected AI Action`, and `Created At`.',
-      '5. Summarize the outcome using readable labels such as `**Question:**`, `**Decision:**`, `**Answer:**`, or `**Visual reference:**`.'
-    );
-  }
-
-  lines.push('', 'Unresolved notes must remain unchanged with `Status: pending`.');
-
-  return lines.join('\n');
-}
-const NOTE_ID_PATTERN = /## NOTE-(\d{3,})\b/g;
 const DEFAULT_MESSAGES = {
   openMarkdownFile: 'Open a Markdown file before adding an AI note.',
   onlyMarkdown: 'AI Notes can only be added to .md Markdown files.',
@@ -91,6 +62,8 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(
+    MarkdownPreviewProvider.register(context),
+    vscode.commands.registerCommand('aiNotes.togglePreview', () => togglePreview()),
     commentController,
     vscode.commands.registerCommand('aiNotes.addNote', addAiNote),
     vscode.commands.registerCommand('aiNotes.addNoteFromContext', addAiNote),
@@ -116,6 +89,22 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   markerController.update(vscode.window.activeTextEditor);
+}
+
+async function togglePreview(): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) return;
+
+  const uri = editor.document.uri;
+  const activeTab = vscode.window.tabGroups.activeTabGroup?.activeTab;
+
+  if (activeTab?.input instanceof vscode.TabInputCustom) {
+    // Currently in custom editor, switch to default text editor
+    await vscode.commands.executeCommand('vscode.openWith', uri, 'default');
+  } else {
+    // Currently in text editor, switch to custom preview
+    await vscode.commands.executeCommand('vscode.openWith', uri, MarkdownPreviewProvider.viewType);
+  }
 }
 
 export function deactivate() {
@@ -210,7 +199,7 @@ async function submitInlineNote(
   });
 
   const edit = new vscode.WorkspaceEdit();
-  const appendText = buildAppendText(document.getText(), note);
+  const appendText = buildAppendText(document.getText(), note, getResolvedNoteAction() as 'delete' | 'convert-to-history');
   const endPosition = document.positionAt(document.getText().length);
 
   edit.insert(document.uri, endPosition, appendText);
@@ -237,121 +226,6 @@ async function revealNote(documentUri: string, noteLine: number) {
 
   editor.selection = new vscode.Selection(range.start, range.end);
   editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-}
-
-function getNextNoteId(documentText: string): string {
-  let highest = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = NOTE_ID_PATTERN.exec(documentText)) !== null) {
-    const parsed = Number.parseInt(match[1], 10);
-    if (parsed > highest) {
-      highest = parsed;
-    }
-  }
-
-  return `NOTE-${String(highest + 1).padStart(3, '0')}`;
-}
-
-function isMarkdownFile(document: vscode.TextDocument): boolean {
-  return document.languageId === 'markdown' && document.fileName.toLowerCase().endsWith('.md');
-}
-
-type ParsedAiNote = {
-  noteId: string;
-  status: string;
-  startLine: number;
-  endLine: number;
-  humanComment: string;
-  expectedAiAction: string;
-  createdAt: string;
-  noteLine: number;
-  documentUri: string;
-};
-
-function parseAiNotes(document: vscode.TextDocument): ParsedAiNote[] {
-  const text = document.getText();
-  const sectionIndex = text.search(new RegExp(`^${escapeRegExp(AI_NOTES_HEADING)}\\s*$`, 'm'));
-
-  if (sectionIndex === -1) {
-    return [];
-  }
-
-  const notesText = text.slice(sectionIndex);
-  const notePattern = /^## (NOTE-\d{3,})\s*$/gm;
-  const noteMatches = Array.from(notesText.matchAll(notePattern));
-  const notes: ParsedAiNote[] = [];
-
-  for (const [index, match] of noteMatches.entries()) {
-    if (match.index === undefined) {
-      continue;
-    }
-
-    const noteOffset = sectionIndex + match.index;
-    const noteEnd = noteMatches[index + 1]?.index ?? notesText.length;
-    const noteBlock = notesText.slice(match.index, noteEnd);
-    const status = extractSingleLineField(noteBlock, 'Status') ?? 'unknown';
-    const lines = extractSingleLineField(noteBlock, 'Lines');
-    const lineMatch = lines?.match(/^(\d+)-(\d+)$/);
-
-    if (!lineMatch) {
-      continue;
-    }
-
-    notes.push({
-      noteId: match[1],
-      status,
-      startLine: Number.parseInt(lineMatch[1], 10),
-      endLine: Number.parseInt(lineMatch[2], 10),
-      humanComment: extractMultilineField(noteBlock, 'Human Comment', ['Expected AI Action', 'Created At']),
-      expectedAiAction: extractMultilineField(noteBlock, 'Expected AI Action', ['Created At']),
-      createdAt: extractSingleLineField(noteBlock, 'Created At') ?? '',
-      noteLine: document.positionAt(noteOffset).line,
-      documentUri: document.uri.toString()
-    });
-  }
-
-  return notes;
-}
-
-function extractSingleLineField(noteBlock: string, fieldName: string): string | undefined {
-  const match = noteBlock.match(new RegExp(`^${escapeRegExp(fieldName)}:\\s*(.*)$`, 'm'));
-  const sameLineValue = match?.[1]?.trim();
-
-  if (sameLineValue) {
-    return sameLineValue;
-  }
-
-  const multilineValue = extractMultilineField(noteBlock, fieldName, [
-    'Status',
-    'Lines',
-    'Selected Text',
-    'Human Comment',
-    'Expected AI Action',
-    'Created At'
-  ]);
-
-  return multilineValue.split(/\r?\n/).find((line) => line.trim())?.trim();
-}
-
-function extractMultilineField(noteBlock: string, fieldName: string, nextFieldNames: string[]): string {
-  const fieldMatch = noteBlock.match(new RegExp(`^${escapeRegExp(fieldName)}:\\s*$`, 'm'));
-
-  if (!fieldMatch || fieldMatch.index === undefined) {
-    return '';
-  }
-
-  const valueStart = fieldMatch.index + fieldMatch[0].length;
-  const rest = noteBlock.slice(valueStart);
-  const nextPattern = new RegExp(`\\n+\\s*(?:${nextFieldNames.map(escapeRegExp).join('|')}):\\s*(?:\\n|$)`, 'm');
-  const nextMatch = rest.match(nextPattern);
-  const rawValue = nextMatch && nextMatch.index !== undefined ? rest.slice(0, nextMatch.index) : rest;
-
-  return rawValue.trim();
-}
-
-function getPendingNotes(document: vscode.TextDocument): ParsedAiNote[] {
-  return parseAiNotes(document).filter((note) => note.status.toLowerCase() === 'pending');
 }
 
 function buildNoteHover(note: ParsedAiNote): vscode.MarkdownString {
@@ -446,90 +320,3 @@ class AiNoteMarkerController implements vscode.Disposable {
   }
 }
 
-function getSelectionEndLine(selection: vscode.Selection): number {
-  if (selection.end.character === 0 && selection.end.line > selection.start.line) {
-    return selection.end.line;
-  }
-
-  return selection.end.line + 1;
-}
-
-type NoteInput = {
-  noteId: string;
-  selectedText: string;
-  humanComment: string;
-  expectedAiAction: string;
-  startLine: number;
-  endLine: number;
-  createdAt: string;
-};
-
-function buildNote(input: NoteInput): { noteId: string; markdown: string } {
-  const selectedBlock = toBlockquote(input.selectedText);
-  const expectedAction = input.expectedAiAction || 'Not specified.';
-
-  return {
-    noteId: input.noteId,
-    markdown: [
-      `## ${input.noteId}`,
-      '',
-      'Status: pending',
-      '',
-      `Lines: ${input.startLine}-${input.endLine}`,
-      '',
-      'Selected Text:',
-      '',
-      selectedBlock,
-      '',
-      'Human Comment:',
-      '',
-      input.humanComment,
-      '',
-      'Expected AI Action:',
-      '',
-      expectedAction,
-      '',
-      'Created At:',
-      '',
-      input.createdAt
-    ].join('\n')
-  };
-}
-
-function toBlockquote(text: string): string {
-  return text
-    .split(/\r?\n/)
-    .map((line) => `> ${line}`)
-    .join('\n');
-}
-
-function buildAppendText(documentText: string, note: { markdown: string }): string {
-  const endsWithNewline = /\r?\n$/.test(documentText);
-  const hasAiNotesSection = new RegExp(`^${escapeRegExp(AI_NOTES_HEADING)}\\s*$`, 'm').test(documentText);
-  const hasInstructions = new RegExp(`^${escapeRegExp(AI_NOTES_INSTRUCTIONS_HEADING)}\\s*$`, 'm').test(documentText);
-  const prefix = endsWithNewline ? '' : '\n';
-
-  if (hasAiNotesSection) {
-    if (!hasInstructions) {
-      return `${prefix}\n${buildAiNotesInstructions()}\n\n${note.markdown}\n`;
-    }
-
-    return `${prefix}\n${note.markdown}\n`;
-  }
-
-  return `${prefix}\n---\n\n${AI_NOTES_HEADING}\n\n${buildAiNotesInstructions()}\n\n${note.markdown}\n`;
-}
-
-function formatLocalTimestamp(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
