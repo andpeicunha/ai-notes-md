@@ -217,11 +217,10 @@ function findSelectedTextInDocument(fullText: string, selectedText: string): num
     }
   }
 
-  // 5. Word anchors: first 3 non-trivial words
-  const words = selectedText.split(/\s+/).filter(w => w.length > 2);
-  if (words.length >= 2) {
-    const anchor = words.slice(0, Math.min(3, words.length)).join(' ');
-    pos = fullText.indexOf(anchor);
+  // 5. Table/cross-cell: split by tabs and try each cell individually
+  const cells = selectedText.split(/\t| {2,}/).map(c => c.trim()).filter(c => c.length > 2);
+  for (const cell of cells) {
+    pos = fullText.indexOf(cell);
     if (pos !== -1) return pos;
   }
 

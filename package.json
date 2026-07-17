@@ -2,7 +2,7 @@
   "name": "ai-notes-md",
   "displayName": "SDD AI Notes",
   "description": "Spec-Driven Development: annotate Markdown files for AI agents.",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "publisher": "ANDREPEIXOTODACUNHA",
   "icon": "icon.png",
   "license": "MIT",
