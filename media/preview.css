@@ -339,20 +339,18 @@ body {
   color: #fff;
 }
 
-/* ── Table annotation marker ── */
-.ai-note-table-marker {
-  display: inline-block;
-  color: #e6a817;
-  font-size: 14px;
-  margin-right: 6px;
+/* ── Table row annotation ── */
+.ai-note-row {
+  border-left: 3px solid #ffc107;
   cursor: pointer;
-  line-height: 1;
-  vertical-align: middle;
-  transition: transform 0.1s;
 }
 
-.ai-note-table-marker:hover {
-  transform: scale(1.3);
+.ai-note-row:hover {
+  background: rgba(255,213,79,0.08);
+}
+
+.ai-note-row td:first-child {
+  padding-left: 7px;
 }
 
 /* ── Highlight.js overrides ── */
