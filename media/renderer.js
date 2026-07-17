@@ -127,6 +127,7 @@ function injectAnnotationMarkers(rawText, notes) {
             // Table row: wrap content between pipes, keep outer pipes outside span
             result.push(wrapTableRow(mainLines[i], noteId));
           } else {
+            const content = mainLines[i].slice(prefix.length);
             result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}">${content}`);
           }
           openNoteId = noteId;
@@ -217,9 +218,6 @@ function truncate(text, maxLen) {
   return text.length > maxLen ? text.slice(0, maxLen).trim() + '…' : text;
 }
 
-function attrEscape(text) {
-  return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 // Detect block-level Markdown prefix that must stay outside the highlight span
 function getBlockPrefix(line) {
