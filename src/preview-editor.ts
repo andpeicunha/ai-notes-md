@@ -194,42 +194,45 @@ function findSelectedTextInDocument(fullText: string, selectedText: string): num
   pos = fullText.indexOf(normalized);
   if (pos !== -1) return pos;
 
-  // 3. Strip backtick code (`text` → text), bold (**text** → text),
-  //    italic (*text* → text), links ([text](url) → text) from raw text,
-  //    then search the plain version.
-  const plainRaw = fullText
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-  pos = plainRaw.indexOf(selectedText);
-  if (pos !== -1) return pos;
-  pos = plainRaw.indexOf(normalized);
-  if (pos !== -1) return pos;
-
-  // 4. Try each non-empty line of the selection
+  // 3. Try each non-empty line of the selection
   const lines = selectedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
   for (const line of lines) {
     pos = fullText.indexOf(line);
     if (pos !== -1) return pos;
-    pos = plainRaw.indexOf(line);
-    if (pos !== -1) return pos;
   }
 
-  // 5. Try word anchors: first 3 words and last 3 words
+  // 4. Strip markdown formatting from raw text and re-search in fullText
+  const plainRaw = stripMarkdown(fullText);
+  pos = plainRaw.indexOf(selectedText);
+  if (pos === -1) pos = plainRaw.indexOf(normalized);
+
+  if (pos !== -1) {
+    // Map plainRaw position back to fullText using surrounding context
+    const ctxStart = Math.max(0, pos - 15);
+    const ctxEnd = Math.min(plainRaw.length, pos + 15);
+    const context = plainRaw.slice(ctxStart, ctxEnd);
+    const fullCtx = fullText.indexOf(context);
+    if (fullCtx !== -1) {
+      return fullCtx + (pos - ctxStart);
+    }
+  }
+
+  // 5. Word anchors: first 3 non-trivial words
   const words = selectedText.split(/\s+/).filter(w => w.length > 2);
-  if (words.length >= 3) {
-    const first3 = words.slice(0, Math.min(3, words.length)).join(' ');
-    const last3 = words.slice(-Math.min(3, words.length)).join(' ');
-    pos = fullText.indexOf(first3);
-    if (pos !== -1) return pos;
-    pos = fullText.indexOf(last3);
-    if (pos !== -1) return pos;
-    pos = plainRaw.indexOf(first3);
-    if (pos !== -1) return pos;
-    pos = plainRaw.indexOf(last3);
+  if (words.length >= 2) {
+    const anchor = words.slice(0, Math.min(3, words.length)).join(' ');
+    pos = fullText.indexOf(anchor);
     if (pos !== -1) return pos;
   }
 
   return -1;
+}
+
+// Strip inline markdown formatting: `code`, **bold**, *italic*, [text](url)
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 }

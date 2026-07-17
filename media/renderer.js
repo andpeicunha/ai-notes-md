@@ -119,19 +119,19 @@ function injectAnnotationMarkers(rawText, notes) {
 
       if (openNoteId !== noteId) {
         if (openNoteId !== null) result.push('</span>');
-        // Skip span injection for lines that would break Markdown structure
-        const skipLine = isTableRow(mainLines[i]);
 
-        if (!isBlank && !skipLine) {
-          result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}">${content}`);
+        if (!isBlank) {
+          const isTable = isTableRow(mainLines[i]);
+
+          if (isTable) {
+            // Table row: wrap content between pipes, keep outer pipes outside span
+            result.push(wrapTableRow(mainLines[i], noteId));
+          } else {
+            result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}">${content}`);
+          }
           openNoteId = noteId;
-
-          // Don't push the raw line again — we already injected it with the span
-          continue;
-        } else {
-          // Table row or blank: still close previous span but don't open new one
-          openNoteId = null;
         }
+        continue;
       }
     } else {
       if (openNoteId !== null) {
@@ -242,9 +242,20 @@ function getBlockPrefix(line) {
 function isTableRow(line) {
   const trimmed = line.trim();
   if (!trimmed.includes('|')) return false;
-  // Separator row: only |, -, :, and whitespace
   if (/^[\|\s\-:]+$/.test(trimmed)) return false;
   return trimmed.startsWith('|') || trimmed.endsWith('|');
+}
+
+// Wrap table row content between outer pipes in a span (preserves table structure)
+function wrapTableRow(line, noteId) {
+  const firstPipe = line.indexOf('|');
+  const lastPipe = line.lastIndexOf('|');
+  if (firstPipe === -1 || lastPipe === -1 || firstPipe === lastPipe) return line;
+
+  const before = line.slice(0, firstPipe + 1);  // includes first |
+  const content = line.slice(firstPipe + 1, lastPipe);
+  const after = line.slice(lastPipe);             // includes last |
+  return before + `<span class="ai-note-line" data-note-id="${noteId}">${content}</span>` + after;
 }
 
 // ── Inline comment input panel ──
@@ -266,7 +277,7 @@ function submitNote() {
   const comment = input.value.trim();
   if (!comment) return;
 
-  const selectedText = document.getElementById('note-panel-selected').textContent;
+  const selectedText = String(document.getElementById('note-panel-selected').textContent ?? '');
   vscode.postMessage({ type: 'createNote', selectedText, humanComment: comment });
   hideNotePanel();
 }
