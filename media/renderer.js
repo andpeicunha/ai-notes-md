@@ -177,10 +177,10 @@ function renderAnnotationCards(notes) {
     </div>
     <div id="notes-list" class="notes-list collapsed">
       ${notes.map(note => `
-        <div class="note-chip" data-note-id="${escapeHtml(note.noteId)}">
+        <div class="note-chip" data-note-id="${escapeHtml(note.noteId)}" data-start-line="${note.startLine}">
           <span class="note-chip-id">${escapeHtml(note.noteId)}</span>
           <span class="note-chip-text">${escapeHtml(truncate(note.humanComment, 80))}</span>
-          <span class="note-chip-lines">L${note.startLine}-${note.endLine}</span>
+          <span class="note-chip-lines">L${note.startLine}-${note.endLine}${tableTag(note)}</span>
         </div>
       `).join('')}
     </div>
@@ -203,7 +203,13 @@ function renderAnnotationCards(notes) {
       if (highlight) {
         highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
-        vscode.postMessage({ type: 'revealNote', noteId });
+        // No inline highlight (e.g., table): scroll to approximate line position
+        const startLine = parseInt(chip.dataset.startLine, 10) || 1;
+        const lineHeight = 24; // approximate px per raw line
+        const content = document.getElementById('content');
+        const scrollParent = document.scrollingElement || document.documentElement;
+        const contentTop = content.getBoundingClientRect().top + window.scrollY;
+        scrollParent.scrollTo({ top: contentTop + (startLine - 1) * lineHeight, behavior: 'smooth' });
       }
     });
   });
@@ -211,6 +217,14 @@ function renderAnnotationCards(notes) {
 
 function truncate(text, maxLen) {
   return text.length > maxLen ? text.slice(0, maxLen).trim() + '…' : text;
+}
+
+function tableTag(note) {
+  // Check if the annotated line is a table row
+  const lines = currentRawText.split('\n');
+  const line = lines[note.startLine - 1] || '';
+  if (isTableRow(line)) return ' · table';
+  return '';
 }
 
 
