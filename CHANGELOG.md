@@ -2,6 +2,13 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.0.1
+
+### Corrigido
+
+- Highlight em linhas com prefixo Markdown (listas `-`, headings `#`, blockquotes `>`) não quebra mais a formatação. O span é injetado após o prefixo.
+- Linhas de tabela (`|`) são ignoradas pelo highlight para evitar quebrar a estrutura da tabela.
+
 ## 1.0.0 (2026-07-17)
 
 ### Adicionado

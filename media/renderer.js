@@ -109,6 +109,7 @@ function injectAnnotationMarkers(rawText, notes) {
     const lineNum = i + 1;
     const noteIds = lineMap.get(lineNum);
     const isBlank = mainLines[i].trim() === '';
+    const prefix = getBlockPrefix(mainLines[i]);
 
     if (noteIds && noteIds.length > 0) {
       const noteId = noteIds[0];
@@ -121,13 +122,25 @@ function injectAnnotationMarkers(rawText, notes) {
 
       if (openNoteId !== noteId) {
         if (openNoteId !== null) result.push('</span>');
-        // Only open a new span if this line is non-blank,
-        // or if it's blank but the notes are adding (edge case)
-        if (!isBlank) {
+        // Skip span injection for lines that would break Markdown structure
+        const skipLine = isTableRow(mainLines[i]);
+
+        if (!isBlank && !skipLine) {
           const noteObj = noteMap.get(noteId);
           const title = noteObj ? attrEscape(`${noteObj.noteId}: ${noteObj.humanComment}`) : '';
-          result.push(`<span class="ai-note-line" data-note-id="${noteId}" title="${title}">`);
+          const content = mainLines[i].slice(prefix.length);
+
+          if (prefix) {
+            result.push(prefix);
+          }
+          result.push(`<span class="ai-note-line" data-note-id="${noteId}" title="${title}">${content}`);
           openNoteId = noteId;
+
+          // Don't push the raw line again — we already injected it with the span
+          continue;
+        } else {
+          // Table row or blank: still close previous span but don't open new one
+          openNoteId = null;
         }
       }
     } else {
@@ -210,6 +223,32 @@ function truncate(text, maxLen) {
 
 function attrEscape(text) {
   return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Detect block-level Markdown prefix that must stay outside the highlight span
+function getBlockPrefix(line) {
+  // List items: "- ", "* ", "+ ", "1. ", etc. (with optional indent)
+  const listMatch = line.match(/^(\s*(?:[-*+]|\d+\.)\s+)/);
+  if (listMatch) return listMatch[1];
+
+  // Blockquote: ">" with optional space
+  const quoteMatch = line.match(/^(\s*>\s?)/);
+  if (quoteMatch) return quoteMatch[1];
+
+  // Headings: "#", "##", etc.
+  const headingMatch = line.match(/^(#{1,6}\s+)/);
+  if (headingMatch) return headingMatch[1];
+
+  return '';
+}
+
+// Table rows have pipes and are not separator lines
+function isTableRow(line) {
+  const trimmed = line.trim();
+  if (!trimmed.includes('|')) return false;
+  // Separator row: only |, -, :, and whitespace
+  if (/^[\|\s\-:]+$/.test(trimmed)) return false;
+  return trimmed.startsWith('|') || trimmed.endsWith('|');
 }
 
 // ── Inline comment input panel ──
