@@ -339,5 +339,21 @@ body {
   color: #fff;
 }
 
+/* ── Table annotation marker ── */
+.ai-note-table-marker {
+  display: inline-block;
+  color: #e6a817;
+  font-size: 14px;
+  margin-right: 6px;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+  transition: transform 0.1s;
+}
+
+.ai-note-table-marker:hover {
+  transform: scale(1.3);
+}
+
 /* ── Highlight.js overrides ── */
 .hljs { background: transparent !important; }
