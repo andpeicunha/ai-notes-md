@@ -16,6 +16,16 @@ Selecione um trecho em qualquer `.md`, adicione uma nota, e a extensão anexa um
 
 ![Reviewing the result](media/demo-review.gif)
 
+## Preview & inline annotations / Preview e anotações inline
+
+Toggle to the rendered preview and annotate directly without leaving it.
+
+Alterne para o preview renderizado e faça anotações sem sair dele.
+
+![Preview toggle](media/demo-preview-toggle.png)
+![Composing a note in the preview](media/demo-preview-compose.png)
+![Highlight and tooltip](media/demo-preview-highlight.png)
+
 ---
 
 ## 🇧🇷 Português
