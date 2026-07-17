@@ -123,10 +123,10 @@ function injectAnnotationMarkers(rawText, notes) {
         if (isBlank) {
           // blank: skip, raw line pushed below
         } else if (isTableRow(mainLines[i])) {
-          // Table row: inject comment at end of last cell (before closing pipe)
+          // Table row: inject hidden span marker inside last cell (before closing pipe)
           const lastPipe = mainLines[i].lastIndexOf('|');
           if (lastPipe > 0) {
-            result.push(mainLines[i].slice(0, lastPipe) + ` <!--ai-note:${noteId}--> ` + mainLines[i].slice(lastPipe));
+            result.push(mainLines[i].slice(0, lastPipe) + ` <span class="ai-note-marker" data-note-id="${noteId}" hidden></span> ` + mainLines[i].slice(lastPipe));
           } else {
             result.push(mainLines[i]);
           }
@@ -357,38 +357,31 @@ function renderAll(rawText) {
   processTableMarkers(noteById);
 }
 
-// Find <!--ai-note:NOTE-XXX--> comments inside table cells and mark parent <tr>
+// Find <span class="ai-note-marker"> inside table cells and mark parent <tr>
 function processTableMarkers(noteById) {
-  const content = document.getElementById('content');
-  const walker = document.createTreeWalker(content, NodeFilter.SHOW_COMMENT);
-
-  while (walker.nextNode()) {
-    const comment = walker.currentNode;
-    const match = comment.nodeValue?.match(/^ai-note:(NOTE-\d+)$/);
-    if (!match) continue;
-    const noteId = match[1];
+  document.querySelectorAll('.ai-note-marker').forEach(marker => {
+    const noteId = marker.dataset.noteId;
+    if (!noteId) return;
 
     const note = noteById.get(noteId);
-    if (!note) continue;
+    if (!note) return;
 
-    // Walk up to find the parent <tr>
-    let el = comment.parentElement;
+    // Walk up to parent <tr>
+    let el = marker.parentElement;
     while (el && el.tagName !== 'TR') {
       el = el.parentElement;
     }
-    if (!el) continue;
+    if (!el) return;
 
-    // Mark the row
     el.classList.add('ai-note-row');
-    el.title = `${note.noteId}: ${note.humanComment}`;
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       showNoteTooltip(el, note);
     });
 
-    // Remove the comment node (clean DOM)
-    comment.remove();
-  }
+    // Remove the marker span
+    marker.remove();
+  });
 }
 
 // ── Custom tooltip for highlighted notes ──
