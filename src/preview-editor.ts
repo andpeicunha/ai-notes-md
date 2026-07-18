@@ -201,27 +201,44 @@ function findSelectedTextInDocument(fullText: string, selectedText: string): num
     if (pos !== -1) return pos;
   }
 
-  // 4. Strip markdown formatting from raw text and re-search in fullText
+  // 4. Strip markdown from raw, confirm text exists, then find via word anchors
   const plainRaw = stripMarkdown(fullText);
-  pos = plainRaw.indexOf(selectedText);
-  if (pos === -1) pos = plainRaw.indexOf(normalized);
+  const inPlain = plainRaw.indexOf(selectedText) !== -1 ||
+                   plainRaw.indexOf(normalized) !== -1;
 
-  if (pos !== -1) {
-    // Map plainRaw position back to fullText using surrounding context
-    const ctxStart = Math.max(0, pos - 15);
-    const ctxEnd = Math.min(plainRaw.length, pos + 15);
-    const context = plainRaw.slice(ctxStart, ctxEnd);
-    const fullCtx = fullText.indexOf(context);
-    if (fullCtx !== -1) {
-      return fullCtx + (pos - ctxStart);
-    }
+  if (inPlain) {
+    // Text confirmed to exist. Find position via word anchors in fullText.
+    pos = findViaWords(fullText, selectedText);
+    if (pos !== -1) return pos;
   }
 
-  // 5. Table/cross-cell: split by tabs and try each cell individually
+  // 5. Table/cross-cell: split by tabs/spaces and try each cell
   const cells = selectedText.split(/\t| {2,}/).map(c => c.trim()).filter(c => c.length > 2);
   for (const cell of cells) {
     pos = fullText.indexOf(cell);
     if (pos !== -1) return pos;
+  }
+
+  // 6. Last resort: find any unique word ≥ 4 chars from the selection
+  pos = findViaWords(fullText, selectedText);
+  return pos;
+}
+
+// Find position by searching for the longest unique word sequence from selectedText
+function findViaWords(fullText: string, selectedText: string): number {
+  const words = selectedText.split(/\s+/).filter(w => w.length > 3);
+  if (words.length === 0) return -1;
+
+  // Try increasingly shorter prefixes: 5 words → 4 → 3 → 2 → 1
+  for (let len = Math.min(5, words.length); len >= 1; len--) {
+    const chunk = words.slice(0, len).join(' ');
+    let pos = fullText.indexOf(chunk);
+    if (pos !== -1) {
+      // Check if unique
+      const second = fullText.indexOf(chunk, pos + 1);
+      if (second === -1) return pos; // unique match
+      if (len === 1) return pos;     // last resort: single word, use first
+    }
   }
 
   return -1;
