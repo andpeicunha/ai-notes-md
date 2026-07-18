@@ -131,6 +131,7 @@ function injectAnnotationMarkers(rawText, notes) {
             result.push(mainLines[i]);
           }
           openNoteId = null;
+          continue;
         } else {
           const content = mainLines[i].slice(prefix.length);
           result.push(prefix + `<span class="ai-note-line" data-note-id="${noteId}">${content}`);
