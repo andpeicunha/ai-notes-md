@@ -2,11 +2,15 @@
 
 > 🇧🇷 [Português](#-português) &nbsp;&nbsp;|&nbsp;&nbsp; 🇺🇸 [English](#-english)
 
-> Spec-Driven Development / Desenvolvimento Orientado a Especificações — annotate Markdown files for AI agents / anotações Markdown para agentes de IA.
+> Escreva menos contexto repetido. Marque o trecho, deixe a tarefa, e a IA sabe onde agir.
 
-Select text in any `.md` file, add an AI note, and the extension appends a structured annotation that AI agents can read and act on. All notes live inside the Markdown file itself — no sidecars, no databases.
+AI Notes é uma extensão para VS Code que transforma comentários em arquivos Markdown em tarefas estruturadas para agentes de IA. Você seleciona um trecho, descreve o que precisa ser feito, e a nota fica salva no próprio `.md`, junto do contexto original.
 
-Selecione um trecho em qualquer `.md`, adicione uma nota, e a extensão anexa uma anotação estruturada. Tudo fica dentro do próprio Markdown — sem arquivos auxiliares, sem banco de dados.
+- **Marque o trecho exato** que precisa de revisão, mudança ou resposta.
+- **Deixe uma tarefa clara para a IA** sem reexplicar o contexto no chat.
+- **Mantenha tudo no Markdown** — sem arquivos auxiliares, banco de dados ou estado oculto.
+
+Turn any `.md` selection into a structured AI task that stays next to its original context. No sidecars, no databases, no hidden state.
 
 ## Creating a note / Criando uma nota
 

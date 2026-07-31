@@ -54,13 +54,13 @@ export class MarkdownPreviewProvider implements vscode.CustomTextEditorProvider 
 </head>
 <body>
   <div id="annotations"></div>
-  <div id="preview-toolbar" class="preview-toolbar" aria-label="Preview controls">
-    <span class="preview-toolbar-label">Zoom</span>
-    <button id="preview-zoom-out" class="preview-toolbar-button" type="button" title="Decrease preview text size" aria-label="Decrease preview text size">−</button>
-    <button id="preview-zoom-reset" class="preview-toolbar-button preview-toolbar-reset" type="button" title="Reset preview text size" aria-label="Reset preview text size">100%</button>
-    <button id="preview-zoom-in" class="preview-toolbar-button" type="button" title="Increase preview text size" aria-label="Increase preview text size">+</button>
-  </div>
   <div id="content" class="markdown-body"></div>
+  <div id="preview-zoom-control" class="preview-zoom-control" aria-label="Preview zoom controls">
+    <span class="preview-zoom-label">Zoom</span>
+    <button id="preview-zoom-out" class="preview-zoom-button" type="button" title="Decrease preview text size" aria-label="Decrease preview text size">−</button>
+    <button id="preview-zoom-reset" class="preview-zoom-button preview-zoom-reset" type="button" title="Reset preview text size" aria-label="Reset preview text size">100%</button>
+    <button id="preview-zoom-in" class="preview-zoom-button" type="button" title="Increase preview text size" aria-label="Increase preview text size">+</button>
+  </div>
   <div id="note-panel">
     <div class="note-panel-header">
       <span class="note-panel-title">Add note for:</span>
@@ -186,18 +186,17 @@ async function handleCreateNote(
   const document = await vscode.workspace.openTextDocument(originalDoc.uri);
   const fullText = document.getText();
 
-  // Multi-strategy text matching (rendered HTML vs raw Markdown)
-  let targetPos = findSelectedTextInDocument(fullText, selectedText);
+  const targetRange = findSelectedTextRangeInText(fullText, selectedText);
 
-  if (targetPos === -1) {
+  if (!targetRange) {
     vscode.window.showWarningMessage(
       'Could not find the selected text in the document. Try selecting a shorter or more unique passage.'
     );
     return;
   }
 
-  const startPos = document.positionAt(targetPos);
-  const endPos = document.positionAt(targetPos + selectedText.length);
+  const startPos = document.positionAt(targetRange.start);
+  const endPos = document.positionAt(targetRange.end);
   const startLine = startPos.line + 1;
   const endLine = getSelectionEndLine(new vscode.Selection(startPos, endPos));
 
@@ -205,7 +204,7 @@ async function handleCreateNote(
 
   const note = buildNote({
     noteId: getNextNoteId(fullText),
-    selectedText,
+    selectedText: targetRange.text,
     humanComment,
     expectedAiAction: '',
     startLine,
@@ -227,6 +226,45 @@ async function handleCreateNote(
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+type TextRangeMatch = {
+  start: number;
+  end: number;
+  text: string;
+};
+
+export function findSelectedTextRangeInText(fullText: string, selectedText: string): TextRangeMatch | undefined {
+  const exact = fullText.indexOf(selectedText);
+  if (exact !== -1) {
+    return { start: exact, end: exact + selectedText.length, text: selectedText };
+  }
+
+  const selectedPlain = normalizePlainText(selectedText);
+  if (!selectedPlain) {
+    return undefined;
+  }
+
+  let offset = 0;
+  for (const line of fullText.split(/(\r?\n)/)) {
+    if (/^\r?\n$/.test(line)) {
+      offset += line.length;
+      continue;
+    }
+
+    if (normalizePlainText(line).includes(selectedPlain)) {
+      return { start: offset, end: offset + line.length, text: line };
+    }
+
+    offset += line.length;
+  }
+
+  const fuzzy = findSelectedTextInDocument(fullText, selectedText);
+  if (fuzzy !== -1) {
+    return { start: fuzzy, end: fuzzy + selectedText.length, text: selectedText };
+  }
+
+  return undefined;
 }
 
 // Robust text matching: handles markdown formatting differences between
@@ -297,5 +335,11 @@ function stripMarkdown(text: string): string {
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^\s*[-*+]\s+/, '')
+    .replace(/^\s*\d+\.\s+/, '');
+}
+
+function normalizePlainText(text: string): string {
+  return stripMarkdown(text).replace(/\s+/g, ' ').trim();
 }

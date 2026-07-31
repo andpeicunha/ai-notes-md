@@ -2,6 +2,17 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.1.13
+
+### Alterado
+
+- **Controle de zoom no rodapé do preview**: os botões de diminuir, resetar e aumentar fonte agora ficam fixos na parte inferior do preview, evitando ocupar a barra superior e mantendo o controle acessível durante a leitura.
+- **Leitura protegida no fim do documento**: o preview ganhou espaçamento inferior extra e ajuste responsivo para reduzir o risco de o controle de zoom cobrir o conteúdo em documentos longos ou painéis estreitos.
+
+### Corrigido
+
+- **Mapeamento de seleção no preview**: notas criadas a partir do preview agora mapeiam o texto renderizado de volta para a linha Markdown original, preservando prefixos de lista e marcações como `**negrito**`, evitando salvar a anotação na linha errada ou com o trecho sem Markdown.
+
 ## 1.1.12
 
 ### Adicionado
