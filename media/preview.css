@@ -6,6 +6,7 @@
   --card-bg: var(--vscode-editor-inactiveSelectionBackground, #f0f0f0);
   --note-highlight: #fff3cd;
   --note-highlight-border: #ffc107;
+  --preview-font-size: 100%;
 }
 
 * { box-sizing: border-box; }
@@ -103,11 +104,66 @@ body {
   font-size: 11px;
 }
 
+/* ── Preview toolbar ── */
+.preview-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 24px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--vscode-sideBar-background, #f6f8fa) 94%, transparent);
+  backdrop-filter: blur(8px);
+  user-select: none;
+}
+
+.preview-toolbar-label {
+  margin-right: 4px;
+  color: var(--vscode-descriptionForeground, #666);
+  font-size: 12px;
+}
+
+.preview-toolbar-button {
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--vscode-button-secondaryBackground, transparent);
+  color: var(--vscode-button-secondaryForeground, var(--fg));
+  font: inherit;
+  font-size: 12px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.preview-toolbar-button:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground, var(--card-bg));
+}
+
+.preview-toolbar-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, var(--accent));
+  outline-offset: 2px;
+}
+
+.preview-toolbar-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.preview-toolbar-reset {
+  min-width: 48px;
+}
+
 /* ── Markdown body ── */
 .markdown-body {
   max-width: 880px;
   margin: 0 auto;
   padding: 24px 32px 64px;
+  font-size: var(--preview-font-size);
 }
 
 .markdown-body h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; margin: 24px 0 16px; }
@@ -135,7 +191,8 @@ body {
   padding: 16px;
   overflow: auto;
   font-size: 85%;
-  line-height: 1.45;
+  font-family: var(--vscode-editor-font-family, monospace);
+  line-height: 1.1;
   background: var(--vscode-textCodeBlock-background, #f6f8fa);
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -356,3 +413,13 @@ body {
 
 /* ── Highlight.js overrides ── */
 .hljs { background: transparent !important; }
+
+/* ── Mermaid diagram ── */
+.mermaid-diagram {
+  margin: 0 0 16px;
+  overflow-x: auto;
+}
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}

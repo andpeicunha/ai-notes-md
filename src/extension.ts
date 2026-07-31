@@ -92,17 +92,18 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function togglePreview(): Promise<void> {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) return;
-
-  const uri = editor.document.uri;
   const activeTab = vscode.window.tabGroups.activeTabGroup?.activeTab;
+  if (!activeTab) return;
 
-  if (activeTab?.input instanceof vscode.TabInputCustom) {
-    // Currently in custom editor, switch to default text editor
-    await vscode.commands.executeCommand('vscode.openWith', uri, 'default');
-  } else {
-    // Currently in text editor, switch to custom preview
+  if (activeTab.input instanceof vscode.TabInputCustom) {
+    // Preview → Text: close preview tab, open text document in same position
+    const uri = activeTab.input.uri;
+    await vscode.window.tabGroups.close(activeTab);
+    await vscode.window.showTextDocument(uri);
+  } else if (activeTab.input instanceof vscode.TabInputText) {
+    // Text → Preview: close text tab, open preview in same position
+    const uri = activeTab.input.uri;
+    await vscode.window.tabGroups.close(activeTab);
     await vscode.commands.executeCommand('vscode.openWith', uri, MarkdownPreviewProvider.viewType);
   }
 }

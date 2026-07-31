@@ -2,7 +2,7 @@
   "name": "ai-notes-md",
   "displayName": "SDD AI Notes",
   "description": "Spec-Driven Development: annotate Markdown files for AI agents.",
-  "version": "1.1.5",
+  "version": "1.1.12",
   "publisher": "ANDREPEIXOTODACUNHA",
   "icon": "icon.png",
   "license": "MIT",
@@ -83,8 +83,15 @@
       "editor/title": [
         {
           "command": "aiNotes.togglePreview",
-          "when": "resourceLangId == markdown && resourceExtname == .md",
-          "group": "navigation"
+          "when": "resourceLangId == markdown && !activeCustomEditorId",
+          "group": "navigation",
+          "icon": "$(eye)"
+        },
+        {
+          "command": "aiNotes.togglePreview",
+          "when": "activeCustomEditorId == aiNotes.markdownPreview",
+          "group": "navigation",
+          "icon": "$(edit)"
         }
       ],
       "editor/context": [
@@ -145,7 +152,9 @@
         "viewType": "aiNotes.markdownPreview",
         "displayName": "Markdown Preview with AI Notes",
         "selector": [
-          { "filenamePattern": "*.md" }
+          {
+            "filenamePattern": "*.md"
+          }
         ],
         "priority": "option"
       }
@@ -154,7 +163,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "compile:webview": "esbuild media/renderer.js --bundle --outfile=media/renderer.bundle.js --format=iife --target=es2020 --platform=browser",
+    "compile:webview": "esbuild media/renderer.js --bundle --outfile=media/renderer.bundle.js --format=iife --target=es2020 --platform=browser --keep-names --external:require --external:fs --external:path",
     "vscode:prepublish": "npm run compile && npm run compile:webview"
   },
   "devDependencies": {
@@ -167,6 +176,7 @@
     "dompurify": "^3.4.12",
     "highlight.js": "^11.11.1",
     "marked": "^18.0.6",
-    "marked-highlight": "^2.2.4"
+    "marked-highlight": "^2.2.4",
+    "mermaid": "^11.16.0"
   }
 }

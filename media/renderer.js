@@ -2,18 +2,88 @@ import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/common';
 import DOMPurify from 'dompurify';
+import mermaid from 'mermaid';
 
 // ── Setup marked ──
 marked.use(
   markedHighlight({
     langPrefix: 'hljs language-',
     highlight(code, lang) {
+      if (lang === 'mermaid' || lang === 'mmd') return code;
       const language = hljs.getLanguage(lang) ? lang : 'plaintext';
       return hljs.highlight(code, { language }).value;
     }
   })
 );
 marked.setOptions({ gfm: true, breaks: false });
+
+// ── Setup mermaid ──
+function isDarkTheme() {
+  return document.body.classList.contains('vscode-dark')
+    || (document.body.classList.contains('vscode-high-contrast')
+        && !document.body.classList.contains('vscode-high-contrast-light'));
+}
+
+function resolveCssColor(...varNames) {
+  for (const name of varNames) {
+    const probe = document.createElement('span');
+    probe.style.display = 'none';
+    probe.style.color = `var(${name})`;
+    document.body.appendChild(probe);
+    const resolved = getComputedStyle(probe).color;
+    probe.remove();
+    if (resolved && resolved !== 'rgba(0, 0, 0, 0)') {
+      const m = resolved.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (m) {
+        const toHex = n => parseInt(n).toString(16).padStart(2, '0');
+        return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
+      }
+    }
+  }
+  return undefined;
+}
+
+function buildMermaidConfig() {
+  const dark = isDarkTheme();
+
+  const resolve = (key, ...vars) => {
+    const val = resolveCssColor(...vars);
+    if (val) variables[key] = val;
+  };
+  const variables = { darkMode: dark };
+
+  resolve('background', '--vscode-editor-background');
+  resolve('textColor', '--vscode-charts-foreground', '--vscode-editor-foreground', '--vscode-foreground');
+  resolve('primaryColor', '--vscode-editorWidget-background');
+  resolve('primaryTextColor', '--vscode-charts-foreground', '--vscode-editor-foreground', '--vscode-foreground');
+  resolve('primaryBorderColor', '--vscode-chart-line', '--vscode-editorWidget-border', '--vscode-focusBorder');
+  resolve('lineColor', '--vscode-chart-line', '--vscode-charts-lines', '--vscode-editor-foreground');
+  resolve('secondaryColor', '--vscode-input-background');
+  resolve('secondaryTextColor', '--vscode-input-foreground', '--vscode-foreground');
+  resolve('secondaryBorderColor', '--vscode-input-border');
+  resolve('tertiaryColor', '--vscode-textBlockQuote-background');
+  resolve('tertiaryTextColor', '--vscode-foreground');
+  resolve('tertiaryBorderColor', '--vscode-textBlockQuote-border');
+  resolve('mainBkg', '--vscode-editorWidget-background');
+  resolve('nodeBorder', '--vscode-chart-line', '--vscode-editorWidget-border', '--vscode-focusBorder');
+  resolve('clusterBkg', '--vscode-textBlockQuote-background');
+  resolve('clusterBorder', '--vscode-textBlockQuote-border');
+  resolve('titleColor', '--vscode-charts-foreground', '--vscode-editor-foreground');
+  resolve('edgeLabelBackground', '--vscode-editor-background');
+  resolve('noteBkgColor', '--vscode-textBlockQuote-background');
+  resolve('noteTextColor', '--vscode-foreground');
+  resolve('noteBorderColor', '--vscode-textBlockQuote-border');
+  resolve('errorBkgColor', '--vscode-inputValidation-errorBackground');
+  resolve('errorTextColor', '--vscode-editorError-foreground');
+
+  return {
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: variables,
+  };
+}
+
+mermaid.initialize(buildMermaidConfig());
 
 const vscode = acquireVsCodeApi();
 let currentRawText = '';
@@ -77,6 +147,44 @@ function escapeHtml(text) {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Find ranges of lines that are inside fenced code blocks (``` or ~~~)
+function getCodeFenceRanges(lines) {
+  const ranges = [];
+  let fenceStart = -1;
+  let fenceChar = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+
+    if (fenceMatch) {
+      const char = fenceMatch[1][0];
+      if (fenceStart === -1) {
+        fenceStart = i;
+        fenceChar = char;
+      } else if (char === fenceChar) {
+        ranges.push({ start: fenceStart, end: i });
+        fenceStart = -1;
+        fenceChar = '';
+      }
+    }
+  }
+
+  // Unclosed fence extends to EOF
+  if (fenceStart !== -1) {
+    ranges.push({ start: fenceStart, end: lines.length - 1 });
+  }
+
+  return ranges;
+}
+
+function isInsideCodeFence(lineIndex, codeFences) {
+  for (const f of codeFences) {
+    if (lineIndex >= f.start && lineIndex <= f.end) return true;
+  }
+  return false;
+}
+
 // ── Inject annotation markers into raw text before rendering ──
 function injectAnnotationMarkers(rawText, notes) {
   if (!notes.length) return rawText;
@@ -98,12 +206,26 @@ function injectAnnotationMarkers(rawText, notes) {
 
   if (lineMap.size === 0) return rawText;
 
+  // Detect fenced code blocks — skip annotation injection inside them
+  const codeFences = getCodeFenceRanges(mainLines);
+
   const result = [];
   let openNoteId = null;
   let blankRun = false;
 
   for (let i = 0; i < mainLines.length; i++) {
     const lineNum = i + 1;
+
+    // Skip annotation injection for lines inside fenced code blocks (```, ~~~)
+    if (isInsideCodeFence(i, codeFences)) {
+      if (openNoteId !== null) {
+        result.push('</span>');
+        openNoteId = null;
+      }
+      result.push(mainLines[i]);
+      continue;
+    }
+
     const noteIds = lineMap.get(lineNum);
     const isBlank = mainLines[i].trim() === '';
     const prefix = getBlockPrefix(mainLines[i]);
@@ -330,8 +452,30 @@ document.addEventListener('mouseup', () => {
   }, 300);
 });
 
+// ── Mermaid rendering ──
+async function renderMermaidElements() {
+  const mermaidBlocks = document.querySelectorAll('.language-mermaid, .language-mmd');
+  let idCounter = 0;
+
+  for (const codeEl of mermaidBlocks) {
+    const preEl = codeEl.closest('pre');
+    if (!preEl) continue;
+
+    const code = codeEl.textContent || '';
+    try {
+      const { svg } = await mermaid.render(`mermaid-${idCounter++}`, code);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mermaid-diagram';
+      wrapper.innerHTML = svg;
+      preEl.replaceWith(wrapper);
+    } catch (err) {
+      console.error('Mermaid render error:', err);
+    }
+  }
+}
+
 // ── Render ──
-function renderAll(rawText) {
+async function renderAll(rawText) {
   currentRawText = rawText;
   const notes = parseNotes(rawText);
 
@@ -340,6 +484,10 @@ function renderAll(rawText) {
   const html = DOMPurify.sanitize(marked.parse(markedText), { ALLOW_DATA_ATTR: true });
 
   document.getElementById('content').innerHTML = html;
+
+  // Render mermaid diagrams in the DOM (after DOMPurify, avoids SVG style interference)
+  await renderMermaidElements();
+
   renderAnnotationCards(notes);
 
   // Wire up click on highlighted spans → show custom tooltip

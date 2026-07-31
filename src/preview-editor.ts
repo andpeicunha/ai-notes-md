@@ -54,6 +54,12 @@ export class MarkdownPreviewProvider implements vscode.CustomTextEditorProvider 
 </head>
 <body>
   <div id="annotations"></div>
+  <div id="preview-toolbar" class="preview-toolbar" aria-label="Preview controls">
+    <span class="preview-toolbar-label">Zoom</span>
+    <button id="preview-zoom-out" class="preview-toolbar-button" type="button" title="Decrease preview text size" aria-label="Decrease preview text size">−</button>
+    <button id="preview-zoom-reset" class="preview-toolbar-button preview-toolbar-reset" type="button" title="Reset preview text size" aria-label="Reset preview text size">100%</button>
+    <button id="preview-zoom-in" class="preview-toolbar-button" type="button" title="Increase preview text size" aria-label="Increase preview text size">+</button>
+  </div>
   <div id="content" class="markdown-body"></div>
   <div id="note-panel">
     <div class="note-panel-header">
@@ -72,6 +78,47 @@ export class MarkdownPreviewProvider implements vscode.CustomTextEditorProvider 
     <div id="tooltip-note-text" class="note-tooltip-text"></div>
     <button class="note-tooltip-edit">Edit in editor</button>
   </div>
+  <script nonce="${nonce}">
+    (() => {
+      const min = 80;
+      const max = 180;
+      const step = 10;
+      const defaultZoom = 100;
+      const storageKey = 'aiNotes.previewZoom';
+      let zoom = defaultZoom;
+
+      const readSavedZoom = () => {
+        try {
+          const saved = Number(localStorage.getItem(storageKey));
+          return Number.isFinite(saved) ? saved : defaultZoom;
+        } catch {
+          return defaultZoom;
+        }
+      };
+
+      const saveZoom = () => {
+        try { localStorage.setItem(storageKey, String(zoom)); } catch {}
+      };
+
+      const setZoom = (value) => {
+        zoom = Math.min(max, Math.max(min, value));
+        document.documentElement.style.setProperty('--preview-font-size', zoom + '%');
+
+        const reset = document.getElementById('preview-zoom-reset');
+        const out = document.getElementById('preview-zoom-out');
+        const input = document.getElementById('preview-zoom-in');
+        if (reset) reset.textContent = zoom + '%';
+        if (out) out.disabled = zoom <= min;
+        if (input) input.disabled = zoom >= max;
+        saveZoom();
+      };
+
+      setZoom(readSavedZoom());
+      document.getElementById('preview-zoom-out')?.addEventListener('click', () => setZoom(zoom - step));
+      document.getElementById('preview-zoom-in')?.addEventListener('click', () => setZoom(zoom + step));
+      document.getElementById('preview-zoom-reset')?.addEventListener('click', () => setZoom(defaultZoom));
+    })();
+  </script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

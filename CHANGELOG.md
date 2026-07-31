@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.1.12
+
+### Adicionado
+
+- **Renderização de diagramas Mermaid**: blocos ` ```mermaid` agora são renderizados como diagramas SVG nativos, com tema integrado ao VS Code (`theme: 'base'` + `themeVariables` resolvidas das CSS variables do tema). Suporte a dark/light mode automático.
+- **Detecção de fenced code blocks**: notas criadas dentro de blocos de código (```) não quebram mais a sintaxe — spans de destaque são suprimidos dentro de fences.
+
+### Alterado
+
+- **Toggle na mesma aba**: o botão de preview alterna na mesma aba (antes abria uma nova). Ícone dinâmico: `$(eye)` no modo texto → `$(edit)` no modo preview. Usa `activeCustomEditorId` nativo do VS Code.
+- **Code blocks mais compactos**: `line-height` reduzido para `1.1` e `font-family: monospace` explícito no `<pre>` — árvores de diretório e diagramas ASCII ficam alinhados e sem espaçamento excessivo.
+
 ## 1.1.0
 
 ### Adicionado
