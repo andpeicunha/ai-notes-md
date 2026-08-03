@@ -2,6 +2,12 @@
 
 Todas as mudanças relevantes desta extensão são documentadas neste arquivo.
 
+## 1.1.14
+
+### Corrigido
+
+- **Anotações no preview com texto repetido**: ao criar uma nota pelo preview, a extensão agora usa uma dica de linha da seleção renderizada para escolher a ocorrência correta quando o mesmo texto aparece em mais de uma parte do Markdown.
+
 ## 1.1.13
 
 ### Alterado

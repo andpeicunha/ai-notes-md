@@ -125,8 +125,21 @@ function parseNotes(text) {
 
 function extractField(block, fieldName) {
   const escaped = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = block.match(new RegExp(`^${escaped}:\\s*(.+)$`, 'm'));
-  return match?.[1]?.trim();
+  const match = block.match(new RegExp(`^${escaped}:\\s*(.*)$`, 'm'));
+  const sameLineValue = match?.[1]?.trim();
+
+  if (sameLineValue) return sameLineValue;
+
+  const multilineValue = extractMultiline(block, fieldName, [
+    'Status',
+    'Lines',
+    'Selected Text',
+    'Human Comment',
+    'Expected AI Action',
+    'Created At'
+  ]);
+
+  return multilineValue.split(/\r?\n/).find((line) => line.trim())?.trim();
 }
 
 function extractMultiline(block, fieldName, nextFields) {
@@ -386,8 +399,11 @@ function isTableRow(line) {
 }
 
 // ── Inline comment input panel ──
-function showNotePanel(selectedText) {
+let pendingSelectionLineHint = undefined;
+
+function showNotePanel(selectedText, lineHint = undefined) {
   const panel = document.getElementById('note-panel');
+  pendingSelectionLineHint = lineHint;
   document.getElementById('note-panel-selected').textContent = selectedText;
   document.getElementById('note-panel-input').value = '';
   panel.classList.add('open');
@@ -399,13 +415,17 @@ function hideNotePanel() {
   document.getElementById('note-panel-input').value = '';
 }
 
+function isNotePanelOpen() {
+  return document.getElementById('note-panel').classList.contains('open');
+}
+
 function submitNote() {
   const input = document.getElementById('note-panel-input');
   const comment = input.value.trim();
   if (!comment) return;
 
   const selectedText = String(document.getElementById('note-panel-selected').textContent ?? '');
-  vscode.postMessage({ type: 'createNote', selectedText, humanComment: comment });
+  vscode.postMessage({ type: 'createNote', selectedText, humanComment: comment, lineHint: pendingSelectionLineHint });
   hideNotePanel();
 }
 
@@ -422,8 +442,10 @@ document.getElementById('note-panel-input').addEventListener('keydown', (e) => {
     e.preventDefault();
     submitNote();
   }
-  // Escape to cancel
-  if (e.key === 'Escape') {
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isNotePanelOpen()) {
     e.preventDefault();
     hideNotePanel();
   }
@@ -431,6 +453,46 @@ document.getElementById('note-panel-input').addEventListener('keydown', (e) => {
 
 function isInsideAnnotations(el) {
   return el && (el.closest('#annotations') || el.closest('.note-card') || el.closest('#note-panel'));
+}
+
+function normalizeSelectionText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
+function stripMarkdownForLineHint(text) {
+  return String(text || '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^\s*[-*+]\s+/, '')
+    .replace(/^\s*\d+\.\s+/, '');
+}
+
+function getSelectionLineHint(selection) {
+  const content = document.getElementById('content');
+  if (!content || !selection.rangeCount) return undefined;
+
+  const range = selection.getRangeAt(0);
+  const beforeRange = document.createRange();
+  beforeRange.selectNodeContents(content);
+  beforeRange.setEnd(range.startContainer, range.startOffset);
+  const beforeLength = normalizeSelectionText(beforeRange.toString()).length;
+
+  const mainText = currentRawText.split('\n# AI Notes')[0];
+  const lines = mainText.split('\n');
+  let renderedLength = 0;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const plainLine = normalizeSelectionText(stripMarkdownForLineHint(lines[index]));
+    if (!plainLine) continue;
+
+    renderedLength += plainLine.length;
+    if (renderedLength >= beforeLength) return index + 1;
+    renderedLength += 1;
+  }
+
+  return undefined;
 }
 
 document.addEventListener('mouseup', () => {
@@ -447,7 +509,7 @@ document.addEventListener('mouseup', () => {
   selectionTimer = setTimeout(() => {
     const current = window.getSelection()?.toString().trim() ?? '';
     if (current.length >= 3) {
-      showNotePanel(current);
+      showNotePanel(current, getSelectionLineHint(selection));
     }
   }, 300);
 });

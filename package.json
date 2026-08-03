@@ -2,7 +2,7 @@
   "name": "ai-notes-md",
   "displayName": "SDD AI Notes",
   "description": "Turn Markdown selections into structured AI tasks with the original context preserved.",
-  "version": "1.1.13",
+  "version": "1.1.16",
   "publisher": "ANDREPEIXOTODACUNHA",
   "icon": "icon.png",
   "license": "MIT",

@@ -141,7 +141,7 @@ export class MarkdownPreviewProvider implements vscode.CustomTextEditorProvider 
           await revealNoteInEditor(document.uri, msg.noteId);
           break;
         case 'createNote':
-          await handleCreateNote(document, msg.selectedText, msg.humanComment);
+          await handleCreateNote(document, msg.selectedText, msg.humanComment, msg.lineHint);
           break;
       }
     });
@@ -181,12 +181,13 @@ async function revealNoteInEditor(documentUri: vscode.Uri, noteId: string): Prom
 async function handleCreateNote(
   originalDoc: vscode.TextDocument,
   selectedText: string,
-  humanComment: string
+  humanComment: string,
+  lineHint?: number
 ): Promise<void> {
   const document = await vscode.workspace.openTextDocument(originalDoc.uri);
   const fullText = document.getText();
 
-  const targetRange = findSelectedTextRangeInText(fullText, selectedText);
+  const targetRange = findSelectedTextRangeInText(fullText, selectedText, lineHint);
 
   if (!targetRange) {
     vscode.window.showWarningMessage(
@@ -234,9 +235,9 @@ type TextRangeMatch = {
   text: string;
 };
 
-export function findSelectedTextRangeInText(fullText: string, selectedText: string): TextRangeMatch | undefined {
+export function findSelectedTextRangeInText(fullText: string, selectedText: string, preferredLine?: number): TextRangeMatch | undefined {
   const exact = fullText.indexOf(selectedText);
-  if (exact !== -1) {
+  if (exact !== -1 && preferredLine === undefined) {
     return { start: exact, end: exact + selectedText.length, text: selectedText };
   }
 
@@ -245,18 +246,34 @@ export function findSelectedTextRangeInText(fullText: string, selectedText: stri
     return undefined;
   }
 
+  const candidates: Array<TextRangeMatch & { line: number }> = [];
   let offset = 0;
+  let lineNumber = 1;
+
   for (const line of fullText.split(/(\r?\n)/)) {
     if (/^\r?\n$/.test(line)) {
       offset += line.length;
+      lineNumber += 1;
       continue;
     }
 
     if (normalizePlainText(line).includes(selectedPlain)) {
-      return { start: offset, end: offset + line.length, text: line };
+      candidates.push({ start: offset, end: offset + line.length, text: line, line: lineNumber });
     }
 
     offset += line.length;
+  }
+
+  if (candidates.length > 0) {
+    if (preferredLine !== undefined) {
+      candidates.sort((a, b) => Math.abs(a.line - preferredLine) - Math.abs(b.line - preferredLine));
+    }
+    const best = candidates[0];
+    return { start: best.start, end: best.end, text: best.text };
+  }
+
+  if (exact !== -1) {
+    return { start: exact, end: exact + selectedText.length, text: selectedText };
   }
 
   const fuzzy = findSelectedTextInDocument(fullText, selectedText);
@@ -266,6 +283,7 @@ export function findSelectedTextRangeInText(fullText: string, selectedText: stri
 
   return undefined;
 }
+
 
 // Robust text matching: handles markdown formatting differences between
 // rendered HTML (what user selects) and raw markdown source.

@@ -27,3 +27,18 @@ test('maps rendered preview text back to the original markdown line', () => {
   assert.equal(match.text, lines[103]);
   assert.equal(fullText.slice(0, match.start).split('\n').length, 104);
 });
+
+test('uses preview line hint to disambiguate repeated rendered text', () => {
+  const lines = Array.from({ length: 140 }, (_, index) => `line ${index + 1}`);
+  lines[93] = '- status ativo/inativo;';
+  lines[136] = '- status ativo/inativo;';
+
+  const fullText = lines.join('\n');
+  const selectedText = 'status ativo/inativo;';
+
+  const match = findSelectedTextRangeInText(fullText, selectedText, 137);
+
+  assert.ok(match);
+  assert.equal(match.text, lines[136]);
+  assert.equal(fullText.slice(0, match.start).split('\n').length, 137);
+});
