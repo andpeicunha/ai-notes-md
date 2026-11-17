@@ -9,12 +9,9 @@ const AI_NOTES_INSTRUCTIONS = [
   '',
   'After resolving a note:',
   '',
-  '1. Do not delete the note.',
-  '2. Convert it into a short historical record.',
-  '3. Remove the fields `Status`, `Lines`, `Selected Text`, `Human Comment`, `Expected AI Action`, and `Created At`.',
-  '4. Change the heading to `## NOTE-XXX ✅`.',
-  '5. Summarize the outcome using readable labels such as `**Question:**`, `**Decision:**`, `**Answer:**`, or `**Visual reference:**`.',
-  '6. Keep the resolved note inside this `# AI Notes` section.',
+  '1. Delete the note block entirely from the document — do not keep it as a historical record.',
+  '2. If no `Status: pending` notes remain after deletion, also remove the entire `# AI Notes` section,',
+  '   including the `---` separator above it and this `## Instructions for AI Agents` block.',
   '',
   'Unresolved notes must remain unchanged with `Status: pending`.'
 ].join('\n');
@@ -77,9 +74,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     commentController,
-    vscode.commands.registerCommand('aiNotes.addNote', addAiNote),
-    vscode.commands.registerCommand('aiNotes.addNoteFromContext', addAiNote),
-    vscode.commands.registerCommand('aiNotes.addNoteFromCodeLens', addAiNote),
+    vscode.commands.registerCommand('aiNotes.addNote', () => addAiNote(commentController)),
+    vscode.commands.registerCommand('aiNotes.addNoteFromContext', () => addAiNote(commentController)),
+    vscode.commands.registerCommand('aiNotes.addNoteFromCodeLens', () => addAiNote(commentController)),
     vscode.commands.registerCommand('aiNotes.submitInlineNote', (reply: vscode.CommentReply) =>
       submitInlineNote(reply, markerController, codeLensProvider)
     ),
@@ -111,7 +108,7 @@ function getMessages(): typeof DEFAULT_MESSAGES {
   return vscode.env.language.toLowerCase().startsWith('pt') ? PT_BR_MESSAGES : DEFAULT_MESSAGES;
 }
 
-async function addAiNote() {
+async function addAiNote(commentController: vscode.CommentController) {
   const editor = vscode.window.activeTextEditor;
   const messages = getMessages();
 
@@ -139,7 +136,9 @@ async function addAiNote() {
     return;
   }
 
-  await vscode.commands.executeCommand('workbench.action.addComment');
+  const thread = commentController.createCommentThread(document.uri, selection, []);
+  thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
+  setTimeout(() => { vscode.commands.executeCommand('workbench.action.focusNextPart'); }, 150);
 }
 
 async function submitInlineNote(
@@ -381,6 +380,20 @@ class AiNoteCodeLensProvider implements vscode.CodeLensProvider {
       );
     }
 
+    // Navigation CodeLens for lines with pending notes
+    for (const note of getPendingNotes(document)) {
+      const noteLine = Math.max(0, note.startLine - 1);
+      const noteRange = new vscode.Range(noteLine, 0, noteLine, 0);
+      codeLenses.push(
+        new vscode.CodeLens(noteRange, {
+          title: `$(bookmark) ${note.noteId}`,
+          tooltip: getMessages().openNote,
+          command: 'aiNotes.revealNote',
+          arguments: [note.documentUri, note.noteLine]
+        })
+      );
+    }
+
     return codeLenses;
   }
 }
@@ -394,8 +407,7 @@ class AiNoteMarkerController implements vscode.Disposable {
       gutterIconPath: vscode.Uri.joinPath(context.extensionUri, 'media', 'note-pending.svg'),
       gutterIconSize: 'contain',
       overviewRulerColor: new vscode.ThemeColor('editorWarning.foreground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-      isWholeLine: true
+      overviewRulerLane: vscode.OverviewRulerLane.Right
     });
   }
 
@@ -412,7 +424,7 @@ class AiNoteMarkerController implements vscode.Disposable {
 
     const decorations = getPendingNotes(editor.document).map((note) => {
       const startLine = Math.max(0, Math.min(note.startLine - 1, editor.document.lineCount - 1));
-      const range = new vscode.Range(startLine, 0, startLine, editor.document.lineAt(startLine).text.length);
+      const range = new vscode.Range(startLine, 0, startLine, 0);
 
       return {
         range,

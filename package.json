@@ -2,7 +2,7 @@
   "name": "ai-notes-md",
   "displayName": "AI Notes for Markdown",
   "description": "Create AI-friendly annotations attached to selected Markdown text.",
-  "version": "0.0.13",
+  "version": "0.0.17",
   "publisher": "local",
   "engines": {
     "vscode": "^1.90.0"
